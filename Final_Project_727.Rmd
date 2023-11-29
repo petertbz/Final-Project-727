@@ -1,0 +1,219 @@
+---
+title: "Final-project-727"
+author: "Group 8: Leng Seong Che, Bozhou (Peter) Tan"
+date: "2023-11-29"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+```
+
+```{r}
+library(appler)
+library(tidyverse)
+library(reshape2)
+library(quanteda)
+library(topicmodels)
+library(tidyverse)
+```
+
+```{r}
+# build the list of browsers
+browser = data.frame(name = c("safari", "edge", "chrome", "firefox", "opera"),
+                     fullname = c("Safari", "Microsoft Edge", "Google Chrome",
+                                     "Mozilla Firefox","Opera Browser"))
+```
+
+```{r}
+# build a function to acquire the app id from the Apple API
+getid = function(name){
+  id = search_apple(name, media = "software", entity = "software")[1,]
+  trackId = id$trackId
+  return(trackId)
+}
+```
+
+```{r}
+# extract appid from the Apple API
+browser$id = sapply(browser$fullname, getid)
+
+# acquire the reviews of each browser
+for (i in 1:dim(browser)[1]) {
+  name = browser$name[i]
+  review = get_apple_reviews(browser$id[i], country = "us", 
+                    all_results = TRUE, sort_by = "mosthelpful")
+  assign(name, review)
+}
+
+```
+
+
+```{r}
+ratings <- data.frame(browser = c("chrome", "edge", "firefox", "safari", "opera"), 
+                      rating = c(mean(chrome$rating),mean(edge$rating), mean(firefox$rating), mean(safari$rating), mean(opera$rating)))
+ratings
+
+library(plotly)
+
+# Create interactive plot, may not be necessary...static plot or a table should be clear enough
+plot_ly(ratings, x = ~browser, y = ~rating , mode = 'markers')
+```
+
+Opera has the highest rating (4.006) by users among the five browsers, followed by edge, firefox, safari, and chrome.
+
+```{r}
+corpus_chrome <- corpus(chrome$review)
+
+# Tokenization
+corpus_chrome_proc <- tokens(corpus_chrome, 
+                           remove_punct = TRUE, # remove punctuation
+                           remove_numbers = TRUE, # remove numbers
+                           remove_symbols = TRUE) %>% # remove symbols (for social media data, could remove everything except letters)
+  tokens_tolower() # remove capitalization
+```
+
+```{r}
+# Lemmatization #
+lemmaData <- read.csv2("baseform_en.tsv", # downloaded from https://github.com/tm4ss/tm4ss.github.io/tree/master/resources
+                       sep="\t", 
+                       header=FALSE, 
+                       encoding = "UTF-8", 
+                       stringsAsFactors = F)
+lemmaData<- na.omit(lemmaData)
+corpus_chrome_proc <-  tokens_replace(corpus_chrome_proc, # "Substitute token types based on vectorized one-to-one matching"
+                                    lemmaData$V1, 
+                                    lemmaData$V2,
+                                    valuetype = "fixed") 
+
+corpus_chrome_proc <- corpus_chrome_proc %>%
+  tokens_remove(stopwords("english")) %>%
+  tokens_ngrams(1) 
+```
+
+
+```{r}
+#  Create dtm
+DTM <- dfm(corpus_chrome_proc)
+
+# Minimum
+minimumFrequency <- 10
+DTM <- dfm_trim(DTM, 
+                min_docfreq = minimumFrequency,
+                max_docfreq = 100000)
+
+# keep only letters... brute force
+DTM  <- dfm_select(DTM, 
+                   pattern = "[a-z]", 
+                   valuetype = "regex", 
+                   selection = 'keep')
+colnames(DTM) <- stringi::stri_replace_all_regex(colnames(DTM), 
+                                                 "[^_a-z]","")
+
+DTM <- dfm_compress(DTM, "features")
+
+```
+
+```{r}
+# Drop rows that do not have content left
+
+#sel_idx <- rowSums(DTM) > 0
+# table(sel_idx) # check if there are blank rows. In Chrome's case, NO
+#DTM <- DTM[sel_idx, ]
+#textdata <- textdata[sel_idx, ]
+
+```
+
+```{r}
+K <- 20
+# Set seed to make results reproducible
+set.seed(9161)
+topicModel <- LDA(DTM, 
+                  K, 
+                  method="Gibbs", 
+                  control=list(iter = 500, 
+                               verbose = 25))
+
+tmResult <- posterior(topicModel)
+```
+
+
+```{r}
+# Topics are distributions over the entire vocabulary
+
+beta <- tmResult$terms
+#glimpse(beta)            
+
+# Each doc has a distribution over k topics
+
+theta <- tmResult$topics
+#glimpse(theta)               
+
+terms(topicModel, 10)
+
+# Top terms per topic. Use top 5 to interpret topics
+top5termsPerTopic <- terms(topicModel, 
+                           5)
+# give the topics more descriptive names than just numbers, concatenate the five most likely terms of each topic to a string that represents a pseudo-name for each topic.
+topicNames <- apply(top5termsPerTopic, 
+                    2, 
+                    paste, 
+                    collapse=" ")
+
+topicProportions <- colSums(theta) / nrow(DTM)  # average probability over all paragraphs
+names(topicProportions) <- topicNames     # Topic Names
+sort(topicProportions, decreasing = TRUE) # sort
+```
+
+```{r}
+# What was the value in the previous model?
+attr(topicModel, "alpha") 
+
+# Re-estimate model with alpha set by us, keep either topicModel or topicModel2
+topicModel2 <- LDA(DTM, 
+                   K, 
+                   method="Gibbs", 
+                   control=list(iter = 500, 
+                                verbose = 25, 
+                                alpha = 0.2))
+tmResult <- posterior(topicModel2)
+theta <- tmResult$topics
+beta <- tmResult$terms
+
+
+topicProportions <- colSums(theta) / nrow(DTM)  # average probability over all paragraphs
+names(topicProportions) <- topicNames     # Topic Names 
+sort(topicProportions, decreasing = TRUE) # sort
+
+topicNames <- apply(terms(topicModel2, 5), 2, paste, collapse = " ")  # top five terms per topic 
+```
+
+
+```{r}
+# Topic distributions of example docs
+exampleIds <- c(2, 100, 200,300,500)
+N <- length(exampleIds)
+
+topicProportionExamples <- as.tibble(theta) %>%
+  slice(exampleIds)
+
+colnames(topicProportionExamples) <- topicNames
+
+vizDataFrame <- melt(cbind(data.frame(topicProportionExamples), 
+                           document = factor(1:N)), 
+                     variable.name = "topic", 
+                     id.vars = "document")  
+
+
+ggplot(data = vizDataFrame, 
+       aes(topic, value, 
+           fill = document), 
+       ylab = "proportion") + 
+  geom_bar(stat="identity") +
+  theme(axis.text.x = element_text(angle = 90, 
+                                   hjust = 1)) +  
+  coord_flip() +
+  facet_wrap(~ document, 
+             ncol = N)
+
+```
