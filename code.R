@@ -23,3 +23,170 @@ for (i in 1:dim(browser)[1]) {
                     all_results = TRUE, sort_by = "mosthelpful")
   assign(name, review)
 }
+
+# combine all datasets
+chrome = chrome %>% mutate(browser = "chrome")
+edge = edge %>% mutate(browser = "edge")
+safari = safari %>% mutate(browser = "safari")
+opera = opera %>% mutate(browser = "opera")
+firefox = firefox %>% mutate(browser = "firefox")
+
+df = rbind(chrome, edge, safari, opera, firefox)
+df$review = tolower(df$review) 
+df$review = gsub("edge|chrome|safari|firefox|opera", "", df$review, ignore.case = TRUE)
+
+# topicmodels 
+corpus_df = corpus(df$review)
+
+# Tokenization
+corpus_df_proc = tokens(corpus_df, 
+                            remove_punct = TRUE, # remove punctuation
+                            remove_numbers = TRUE, # remove numbers
+                            remove_symbols = TRUE) %>% # remove symbols (for social media data, could remove everything except letters)
+  tokens_tolower() # remove capitalization
+
+# Lemmatization #
+lemmaData = read.csv2("baseform_en.tsv", 
+                      sep="\t", 
+                      header=FALSE, 
+                      encoding = "UTF-8", 
+                      stringsAsFactors = F) %>% 
+  na.omit()
+
+# "Substitute token types based on vectorized one-to-one matching"
+corpus_df_proc = tokens_replace(corpus_df_proc, 
+                                    lemmaData$V1, 
+                                    lemmaData$V2,
+                                    valuetype = "fixed") 
+
+# remove stopwords
+corpus_df_proc = corpus_df_proc %>%
+  tokens_remove(stopwords("english")) %>%
+  tokens_ngrams(1) 
+
+#  Create dtm
+DTM = dfm(corpus_df_proc)
+
+# Minimum
+minimumFrequency = 10
+DTM = dfm_trim(DTM, 
+               min_docfreq = minimumFrequency,
+               max_docfreq = 100000)
+
+# keep only letters... brute force
+DTM  = dfm_select(DTM, 
+                  pattern = "[a-z]", 
+                  valuetype = "regex", 
+                  selection = 'keep')
+colnames(DTM) = stringi::stri_replace_all_regex(colnames(DTM), 
+                                                "[^_a-z]","")
+
+DTM = dfm_compress(DTM, "features")
+
+# Drop rows that do not have content left, In Chrome's case, NO
+
+#sel_idx <- rowSums(DTM) > 0
+# table(sel_idx) # check if there are blank rows. 
+#DTM <- DTM[sel_idx, ]
+#textdata <- textdata[sel_idx, ]
+
+K = 20
+# Set seed to make results reproducible
+set.seed(9161)
+topicModel = LDA(DTM, 
+                 K, 
+                 method="Gibbs", 
+                 control=list(iter = 500, 
+                              verbose = 25))
+
+tmResult = posterior(topicModel)
+
+# Topics are distributions over the entire vocabulary
+
+beta = tmResult$terms
+#glimpse(beta)            
+
+# Each doc has a distribution over k topics
+
+theta = tmResult$topics
+#glimpse(theta)               
+
+terms(topicModel, 10)
+
+# Top terms per topic. Use top 5 to interpret topics
+top5termsPerTopic = terms(topicModel, 5)
+
+# give the topics more descriptive names than just numbers, concatenate the five most likely terms of each topic to a string that represents a pseudo-name for each topic.
+topicNames = apply(top5termsPerTopic, 
+                   2, 
+                   paste, 
+                   collapse=" ")
+
+topicProportions = colSums(theta) / nrow(DTM)  # average probability over all paragraphs
+names(topicProportions) = topicNames     # Topic Names
+sort(topicProportions, decreasing = TRUE) # sort
+
+# What was the value in the previous model?
+attr(topicModel, "alpha") 
+
+# Re-estimate model with alpha set by us, keep either topicModel or topicModel2
+topicModel2 = LDA(DTM, 
+                  K, 
+                  method="Gibbs", 
+                  control=list(iter = 500, 
+                               verbose = 25, 
+                               alpha = 0.2))
+tmResult = posterior(topicModel2)
+theta = tmResult$topics
+beta = tmResult$terms
+
+
+topicProportions = colSums(theta) / nrow(DTM)  # average probability over all paragraphs
+names(topicProportions) = topicNames     # Topic Names 
+sort(topicProportions, decreasing = TRUE) # sort
+
+topicNames = apply(terms(topicModel2, 5), 2, paste, collapse = " ")  # top five terms per topic 
+
+# Topic distributions of example docs
+exampleIds = c(2, 100, 200,300,500)
+N = length(exampleIds)
+
+topicProportionExamples = as.tibble(theta) %>%
+  slice(exampleIds)
+
+colnames(topicProportionExamples) = topicNames
+
+vizDataFrame = melt(cbind(data.frame(topicProportionExamples), 
+                          document = factor(1:N)), 
+                    variable.name = "topic", 
+                    id.vars = "document")  
+
+ggplot(data = vizDataFrame, 
+       aes(topic, value, 
+           fill = document), 
+       ylab = "proportion") + 
+  geom_bar(stat="identity") +
+  theme(axis.text.x = element_text(angle = 90, 
+                                   hjust = 1)) +  
+  coord_flip() +
+  facet_wrap(~ document, 
+             ncol = N)
+
+# Average theme proportions by decade
+topic_proportion_per_decade = aggregate(theta, 
+                                        by = list(browser = df$browser), 
+                                        mean)
+colnames(topic_proportion_per_decade)[2:(K+1)] = topicNames
+vizDataFrame = melt(topic_proportion_per_decade, 
+                     id.vars = "browser")
+
+if(!require(pals)) install.packages("pals")
+library(pals)
+ggplot(vizDataFrame, 
+       aes(x=browser, 
+           y=value, 
+           fill=variable)) + 
+  geom_bar(stat = "identity")+
+  ylab("proportion") + 
+  scale_fill_manual(values = paste0(alphabet(20), "FF"), name = "browser") + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
