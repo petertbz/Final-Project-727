@@ -1,5 +1,11 @@
 library(appler)
 library(tidyverse)
+library(reshape2)
+library(quanteda)
+library(topicmodels)
+library(tidyverse)
+library(knitr)
+library(plotly)
 
 # build the list of browers
 browser = data.frame(name = c("safari", "edge", "chrome", "firefox", "opera"),
@@ -24,6 +30,14 @@ for (i in 1:dim(browser)[1]) {
   assign(name, review)
 }
 
+# get ratings of each browser
+ratings = data.frame(browser = c("chrome", "edge", "firefox", "safari", "opera"), 
+                     rating = c(mean(chrome$rating), mean(edge$rating), mean(firefox$rating), mean(safari$rating), mean(opera$rating)))
+kable(ratings, caption = "ratings")
+
+# Create interactive plot, may not be necessary...static plot or a table should be clear enough
+plot_ly(ratings, x = ~browser, y = ~rating, mode = 'markers')
+
 # combine all datasets
 chrome = chrome %>% mutate(browser = "chrome")
 edge = edge %>% mutate(browser = "edge")
@@ -34,6 +48,8 @@ firefox = firefox %>% mutate(browser = "firefox")
 df = rbind(chrome, edge, safari, opera, firefox)
 df$review = tolower(df$review) 
 df$review = gsub("edge|chrome|safari|firefox|opera", "", df$review, ignore.case = TRUE)
+
+dfrate = df %>% mutate(good = mutate())
 
 # topicmodels 
 corpus_df = corpus(df$review)
