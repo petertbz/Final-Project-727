@@ -75,13 +75,14 @@ safari = safari %>% mutate(browser = "safari")
 opera = opera %>% mutate(browser = "opera")
 firefox = firefox %>% mutate(browser = "firefox")
 
+pattern = "edge|chrome|safari|firefox|opera|browser|google|microsoft|mozilla|apple|app|apps|bing|’"
+
 df = rbind(chrome, edge, safari, opera, firefox)
 df$review = tolower(df$review) 
-df$review = gsub("edge|chrome|safari|firefox|opera", "", df$review, ignore.case = TRUE)
+df$review = gsub(pattern, "", df$review, ignore.case = TRUE)
 
 # topicmodels 
 corpus_df = corpus(df$review)
-
 ```
 
 ```{r}
@@ -112,9 +113,10 @@ corpus_df_proc = tokens_replace(corpus_df_proc,
                                     lemmaData$V2,
                                     valuetype = "fixed") 
 
+stop = stopwords("english", source = "stopwords-iso")
 # remove stopwords
 corpus_df_proc = corpus_df_proc %>%
-  tokens_remove(stopwords("english")) %>%
+  tokens_remove(stop) %>%
   tokens_ngrams(1) 
 ```
 
@@ -152,7 +154,7 @@ DTM = dfm_compress(DTM, "features")
 ```
 
 ```{r}
-K = 15
+K = 10
 # Set seed to make results reproducible
 set.seed(9161)
 topicModel = LDA(DTM, 
@@ -233,7 +235,7 @@ ggplot(vizDataFrame,
            y=value, 
            fill=variable)) + 
   geom_bar(stat = "identity")+
-  labs(title = "Top 15 Topics for App Store Reviews by Browser", 
+  labs(title = "Top 10 Topics for App Store Reviews by Browser", 
        y = "proportion") +
   scale_fill_manual(values = paste0(alphabet(20), "FF"), name = "Topics")
 ```
@@ -243,7 +245,7 @@ ggplot(vizDataFrame,
 ```{r}
 df1 = rbind(chrome, edge, safari, opera, firefox) %>% filter(rating >= 3)
 df1$review = tolower(df1$review) 
-df1$review = gsub("edge|chrome|safari|firefox|opera", "", df1$review, ignore.case = TRUE)
+df1$review = gsub(pattern, "", df1$review, ignore.case = TRUE, perl = TRUE)
 
 # topicmodels 
 corpus_df1 = corpus(df1$review)
@@ -280,7 +282,7 @@ corpus_df1_proc = tokens_replace(corpus_df1_proc,
 ```{r}
 # remove stopwords
 corpus_df1_proc = corpus_df1_proc %>%
-  tokens_remove(stopwords("english")) %>%
+  tokens_remove(stop) %>%
   tokens_ngrams(1) 
 
 ```
@@ -401,7 +403,7 @@ ggplot(vizDataFrame,
 ```{r}
 df2 = rbind(chrome, edge, safari, opera, firefox) %>% filter(rating < 3)
 df2$review = tolower(df2$review) 
-df2$review = gsub("edge|chrome|safari|firefox|opera", "", df2$review, ignore.case = TRUE)
+df2$review = gsub(pattern, "", df2$review, ignore.case = TRUE, perl = TRUE)
 
 # topicmodels 
 corpus_df2 = corpus(df2$review)
@@ -439,7 +441,7 @@ corpus_df2_proc = tokens_replace(corpus_df2_proc,
 ```{r}
 # remove stopwords
 corpus_df2_proc = corpus_df2_proc %>%
-  tokens_remove(stopwords("english")) %>%
+  tokens_remove(stop) %>%
   tokens_ngrams(1) 
 
 ```
