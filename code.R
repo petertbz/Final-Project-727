@@ -32,7 +32,11 @@ for (i in 1:dim(browser)[1]) {
 
 # get ratings of each browser
 ratings = data.frame(browser = c("chrome", "edge", "firefox", "safari", "opera"), 
-                     rating = c(mean(chrome$rating), mean(edge$rating), mean(firefox$rating), mean(safari$rating), mean(opera$rating)))
+                     rating = c(mean(chrome$rating), mean(edge$rating), mean(firefox$rating), mean(safari$rating), mean(opera$rating)),
+                     n_positive = c(sum(chrome$rating >= 3), sum(edge$rating >= 3), sum(firefox$rating >= 3), sum(safari$rating >= 3), sum(opera$rating >= 3)),
+                     n_negative = c(sum(chrome$rating < 3), sum(edge$rating < 3), sum(firefox$rating < 3), sum(safari$rating < 3), sum(opera$rating < 3)))
+
+
 kable(ratings, caption = "ratings")
 
 # Create interactive plot, may not be necessary...static plot or a table should be clear enough
@@ -49,7 +53,7 @@ df = rbind(chrome, edge, safari, opera, firefox)
 df$review = tolower(df$review) 
 df$review = gsub("edge|chrome|safari|firefox|opera", "", df$review, ignore.case = TRUE)
 
-dfrate = df %>% mutate(good = mutate())
+#dfrate = df %>% mutate(good = mutate())
 
 # topicmodels 
 corpus_df = corpus(df$review)
@@ -203,9 +207,9 @@ ggplot(vizDataFrame,
            y=value, 
            fill=variable)) + 
   geom_bar(stat = "identity")+
-  ylab("proportion") + 
-  scale_fill_manual(values = paste0(alphabet(20), "FF"), name = "browser") + 
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  labs(title = "Top 15 Topics for App Store Reviews by Browser", 
+       y = "proportion") +
+  scale_fill_manual(values = paste0(alphabet(20), "FF"), name = "Topics")
 
 ###########################
 
@@ -365,9 +369,9 @@ ggplot(vizDataFrame,
            y=value, 
            fill=variable)) + 
   geom_bar(stat = "identity")+
-  ylab("proportion") + 
-  scale_fill_manual(values = paste0(alphabet(20), "FF"), name = "browser") + 
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  labs(title = "Top 10 Topics for Positive App Store Reviews by Browser", 
+      y = "proportion") +
+  scale_fill_manual(values = paste0(alphabet(20), "FF"), name = "Topics") 
 
 ###########################
 
@@ -527,9 +531,9 @@ ggplot(vizDataFrame,
            y=value, 
            fill=variable)) + 
   geom_bar(stat = "identity")+
-  ylab("proportion") + 
-  scale_fill_manual(values = paste0(alphabet(20), "FF"), name = "browser") + 
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  labs(title = "Top 10 Topics for Negative App Store Reviews by Browser", 
+       y = "proportion") +
+  scale_fill_manual(values = paste0(alphabet(20), "FF"), name = "Topics")
 
 
 
