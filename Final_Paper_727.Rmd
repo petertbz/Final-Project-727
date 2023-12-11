@@ -1,0 +1,35 @@
+---
+title: "Browser Wars on iPhone: Who is the User-acknowledged Winner?"
+author: 'Group 8: Bozhou(Peter) Tan; Leng Seong Che'
+date: "2023-12-11"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, 
+                      cache = TRUE, echo = FALSE,
+                      eval = TRUE)
+```
+
+```{r include=FALSE}
+library(appler)
+library(tidyverse)
+library(knitr)
+library(plotly)
+library(pals)
+```
+
+```{r}
+load("results.RData")
+```
+
+```{r}
+ggplot(vizDataFrame3, 
+       aes(x=browser, 
+           y=value, 
+           fill=variable)) + 
+  geom_bar(stat = "identity")+
+  labs(title = "Top 10 Topics for Negative App Store Reviews by Browser", 
+       y = "proportion") +
+  scale_fill_manual(values = paste0(alphabet(20), "FF"), name = "Topics") 
+```
