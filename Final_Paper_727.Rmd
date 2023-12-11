@@ -1,8 +1,16 @@
 ---
 title: "Browser Wars on iPhone: Who is the User-acknowledged Winner?"
-author: 'Group 8: Bozhou(Peter) Tan; Leng Seong Che'
+author: 
+  - Bozhou(Peter) Tan
+  - Leng Seong Che
 date: "2023-12-11"
-output: pdf_document
+output: 
+  pdf_document:
+    latex_engine: xelatex
+bibliography: bibliography.bib
+nocite: '@*'
+spacing: onehalfspacing
+geometry: margin = 1in
 ---
 
 ```{r setup, include=FALSE}
@@ -23,6 +31,14 @@ library(pals)
 load("results.RData")
 ```
 
+**Abstract: **
+
+# Introduction
+
+# Method
+
+# Result
+
 ```{r}
 ggplot(vizDataFrame3, 
        aes(x=browser, 
@@ -33,3 +49,7 @@ ggplot(vizDataFrame3,
        y = "proportion") +
   scale_fill_manual(values = paste0(alphabet(20), "FF"), name = "Topics") 
 ```
+
+# Discussion
+
+# Reference
