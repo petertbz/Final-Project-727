@@ -18,6 +18,7 @@ library(topicmodels)
 library(tidyverse)
 library(knitr)
 library(plotly)
+library(pals)
 ```
 
 ```{r}
@@ -144,16 +145,6 @@ DTM = dfm_compress(DTM, "features")
 ```
 
 ```{r}
-# Drop rows that do not have content left, In Chrome's case, NO
-
-#sel_idx <- rowSums(DTM) > 0
-# table(sel_idx) # check if there are blank rows. 
-#DTM <- DTM[sel_idx, ]
-#textdata <- textdata[sel_idx, ]
-
-```
-
-```{r}
 K = 10
 # Set seed to make results reproducible
 set.seed(9161)
@@ -225,12 +216,12 @@ topic_proportion_per_decade = aggregate(theta,
                                         by = list(browser = df$browser), 
                                         mean)
 colnames(topic_proportion_per_decade)[2:(K+1)] = topicNames
-vizDataFrame = melt(topic_proportion_per_decade, 
+vizDataFrame1 = melt(topic_proportion_per_decade, 
                      id.vars = "browser")
 
 if(!require(pals)) install.packages("pals")
 library(pals)
-ggplot(vizDataFrame, 
+ggplot(vizDataFrame1, 
        aes(x=browser, 
            y=value, 
            fill=variable)) + 
@@ -382,12 +373,10 @@ topic_proportion_per_decade = aggregate(theta,
                                         by = list(browser = df1$browser), 
                                         mean)
 colnames(topic_proportion_per_decade)[2:(K+1)] = topicNames
-vizDataFrame = melt(topic_proportion_per_decade, 
+vizDataFrame2 = melt(topic_proportion_per_decade, 
                     id.vars = "browser")
 
-if(!require(pals)) install.packages("pals")
-library(pals)
-ggplot(vizDataFrame, 
+ggplot(vizDataFrame2, 
        aes(x=browser, 
            y=value, 
            fill=variable)) + 
@@ -535,12 +524,12 @@ topic_proportion_per_decade = aggregate(theta,
                                         by = list(browser = df2$browser), 
                                         mean)
 colnames(topic_proportion_per_decade)[2:(K+1)] = topicNames
-vizDataFrame = melt(topic_proportion_per_decade, 
+vizDataFrame3 = melt(topic_proportion_per_decade, 
                     id.vars = "browser")
 
 if(!require(pals)) install.packages("pals")
 library(pals)
-ggplot(vizDataFrame, 
+ggplot(vizDataFrame3, 
        aes(x=browser, 
            y=value, 
            fill=variable)) + 
@@ -548,4 +537,8 @@ ggplot(vizDataFrame,
   labs(title = "Top 10 Topics for Negative App Store Reviews by Browser", 
        y = "proportion") +
   scale_fill_manual(values = paste0(alphabet(20), "FF"), name = "Topics") 
+```
+
+```{r}
+save(vizDataFrame1, vizDataFrame2, vizDataFrame3, ratings, file = "results.RData")
 ```
