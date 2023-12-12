@@ -8,6 +8,7 @@ output:
   pdf_document:
     latex_engine: xelatex
 bibliography: bibliography.bib
+csl: apa.csl
 nocite: '@*'
 spacing: onehalfspacing
 geometry: margin = 1in
@@ -28,6 +29,9 @@ library(kableExtra)
 
 ```{r}
 load("results.RData")
+market = tail(read_csv("browser-US-monthly.csv"), 1) %>% 
+  select(-Date) %>% 
+  gather(., key = "Browser", value = "share")
 ```
 
 **Abstract: **
@@ -35,6 +39,26 @@ load("results.RData")
 **GitHub link:** <https://github.com/petertbz/Final-Project-727.git>
 
 # Introduction
+
+The browser war is quite fierce in desktop systems: Google Chrome, Microsoft Edge, Safari, Mozilla Firefox, and some other browsers are still batting to attract more users. But what is the scenario in mobile systems, such as iOS and Android? Recent data show that Safari, which can only be used on Apple devices, has the largest market share with 52.73%. Chrome follows with a share of 40.18%. Other browsers, such as Mozilla Firefox and Microsoft Edge, only account for a small percentage [@statcounter_mobile_2023]. The providers of Safari and Chrome are also the developers of the most popular mobile systems, iOS and Android. If we look into the relationship, we can see that it is not a coincidence. 
+
+```{r fig.cap="Market Share of Each Browser on Mobile Platform in 11/2023 (Source: StatCounter Global Stats)"}
+p1 = ggplot(market, aes(x = "", y = share, fill = reorder(Browser, -share))) + 
+  geom_bar(stat = 'identity', width = 1) + 
+  coord_polar(theta = 'y', start = 0, direction = -1) +
+  geom_text(aes(label = ifelse(Browser %in% c("Safari", "Chrome"), paste0(share, "%"), "")), position = position_stack(vjust = 0.5)) +
+  theme_bw() +
+  labs(fill = "Browser") +
+  theme(axis.line.x = element_blank(),
+        axis.text = element_blank(),
+        axis.title = element_blank(),
+        axis.ticks = element_blank(),
+        panel.grid = element_blank(),
+        panel.border = element_blank(),
+        plot.background = element_blank(),
+        panel.background = element_blank())
+p1
+```
 
 # Method
 
