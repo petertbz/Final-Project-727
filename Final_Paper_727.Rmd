@@ -1,5 +1,5 @@
 ---
-title: "Browser Wars on iPhone: Who is the User-acknowledged Winner?"
+title: "Browser Wars on iPhone: Who is the User-acknowledged Winner in App Store?"
 author: 
   - Bozhou(Peter) Tan
   - Leng Seong Che
@@ -16,15 +16,14 @@ geometry: margin = 1in
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE, 
                       cache = TRUE, echo = FALSE,
-                      eval = TRUE)
+                      eval = TRUE, fig.height = 4)
 ```
 
 ```{r include=FALSE}
-library(appler)
 library(tidyverse)
 library(knitr)
-library(plotly)
 library(pals)
+library(kableExtra)
 ```
 
 ```{r}
@@ -33,6 +32,8 @@ load("results.RData")
 
 **Abstract: **
 
+**GitHub link:** <https://github.com/petertbz/Final-Project-727.git>
+
 # Introduction
 
 # Method
@@ -40,14 +41,51 @@ load("results.RData")
 # Result
 
 ```{r}
-ggplot(vizDataFrame3, 
-       aes(x=browser, 
-           y=value, 
-           fill=variable)) + 
+kable(ratings, col.names = c("Browser", "Rating", "Number of Positive Reviews", "Number of Negative Reviews"),
+      caption = "Rating, Number of Positive Reviews, and Number of Negative Reviews by Browser") %>% 
+  kable_styling(full_width = FALSE) %>% 
+  row_spec(0, align = "c")
+  
+```
+
+```{r fig.cap="Ratings of Each Browser"}
+ggplot(ratings, aes(x = browser, y = rating, fill = browser)) + 
+  geom_col(show.legend = FALSE) +
+  coord_cartesian(ylim = c(0,5)) +
+  theme_bw()
+```
+
+```{r fig.cap="Top 10 Topics for App Store Reviews by Browser"}
+ggplot(vizDataFrame1, 
+       aes(x = browser, 
+           y = value, 
+           fill = variable)) + 
   geom_bar(stat = "identity")+
-  labs(title = "Top 10 Topics for Negative App Store Reviews by Browser", 
-       y = "proportion") +
-  scale_fill_manual(values = paste0(alphabet(20), "FF"), name = "Topics") 
+  labs(y = "proportion") +
+  scale_fill_manual(values = paste0(alphabet(20), "FF"), name = "Topics") +
+  theme_bw()
+```
+
+```{r fig.cap="Top 10 Topics for Positive App Store Reviews by Browser"}
+ggplot(vizDataFrame2, 
+       aes(x = browser, 
+           y = value, 
+           fill = variable)) + 
+  geom_bar(stat = "identity")+
+  labs(y = "proportion") +
+  scale_fill_manual(values = paste0(alphabet(20), "FF"), name = "Topics") +
+  theme_bw()
+```
+
+```{r fig.cap="Top 10 Topics for Negative App Store Reviews by Browser"}
+ggplot(vizDataFrame3, 
+       aes(x = browser, 
+           y = value, 
+           fill = variable)) + 
+  geom_bar(stat = "identity")+
+  labs(y = "proportion") +
+  scale_fill_manual(values = paste0(alphabet(20), "FF"), name = "Topics") +
+  theme_bw()
 ```
 
 # Discussion
