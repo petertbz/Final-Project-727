@@ -34,13 +34,13 @@ market = tail(read_csv("browser-US-monthly.csv"), 1) %>%
   gather(., key = "Browser", value = "share")
 ```
 
-**Abstract: **
+**Abstract:** Our research focuses on the popular browsers in the App Store and investigates which browser is liked most by the users and the reasons behind it. To address this question, we use the App Store Connect API to extract ratings and reviews from the App Store. We calculate the mean ratings to compare which browser is the best. Furthermore, we adopt the topic modeling technique on the review corpus to explore the reasons for positive and negative reviews of each browser. The results show that Safari does not have an absolute lead position in the App Store, indicating that the monopolistic policy on iOS may hurt the company and users at the same time and that future changes will be needed. 
 
 **GitHub link:** <https://github.com/petertbz/Final-Project-727.git>
 
 # Introduction
 
-The browser war is quite fierce in desktop systems: Google Chrome, Microsoft Edge, Safari, Mozilla Firefox, and some other browsers are still batting to attract more users. But what is the scenario in mobile systems, such as iOS and Android? Recent data show that Safari, which can only be used on Apple devices, has the largest market share with 52.73%. Chrome follows with a share of 40.18%. Other browsers, such as Mozilla Firefox and Microsoft Edge, only account for a small percentage [@statcounter_mobile_2023]. The providers of Safari and Chrome are also the developers of the most popular mobile systems, iOS and Android. If we look into the relationship, we can see that it is not a coincidence. 
+The browser war is quite fierce in desktop systems: Google Chrome, Microsoft Edge, Safari, Mozilla Firefox, and other browsers are still batting to attract more users. But what is the scenario in mobile systems, such as iOS and Android? Recent data show that Safari, which can only be used on Apple devices, has the largest market share with 52.73%. Chrome follows with a share of 40.18%. Other browsers, such as Mozilla Firefox and Microsoft Edge, only account for a small percentage [@statcounter_mobile_2023]. The providers of Safari and Chrome are also developers of the most popular mobile systems, iOS and Android. We can see it is not a coincidence if we closely examine the relationship.
 
 ```{r fig.cap="Market Share of Each Browser on Mobile Platform in 11/2023 (Source: StatCounter Global Stats)"}
 p1 = ggplot(market, aes(x = "", y = share, fill = reorder(Browser, -share))) + 
@@ -60,9 +60,20 @@ p1 = ggplot(market, aes(x = "", y = share, fill = reorder(Browser, -share))) +
 p1
 ```
 
+Taking Safari as an example, Apple requires all browsers on iOS and iPadOS to use its WebKit rendering engine for security, performance, and compatibility [@apple_inc_webkit_2023]. Other engines, including Chromium, are not allowed in iOS and iPadOS. However, some antitrust concerns and debates exist about Apple’s monopolistic behavior^["CMA plans market investigation into mobile browsers and cloud gaming", UK Competition and Markets Authority, https://www.gov.uk/government/news/cma-plans-market-investigation-into-mobile-browsers-and-cloud-gaming]. From 2017 to 2020, Apple and other technology giants encountered 111 antitrust investigations and disputes worldwide [@wang_competition_2021]. As for browsers, in July 2018, the European Union announced that Google had been fined 4.34 billion euros for using its own Android operating system market monopoly advantage to bundle Google search services and Google Chrome browser forcibly^["Antitrust: Commission fines Google €4.34 billion for abuse of dominance regarding Android devices", European Commission,  https://ec.europa.eu/commission/presscorner/detail/en/IP_18_4581]. 
+
+What is the influence of Apple’s monopolistic policy on browsers on iOS? On the one hand, Safari should provide the best functions and service, since it has the best integration with iOS and iPadOS, thus giving users the best experience [@tirole_competition_2023]. On the other hand, a monopoly may undermine product quality according to corresponding economic theories, when it does not have enough motivation to improve the quality when the competition is limited and minor [@cowling_social_1978; @dixit_monopolistic_1993]. The market not meeting the perfect equilibrium not only hurts other competitors and users but will also negatively affect the monopoly in the future. Therefore, our questions are: Does the monopoly policy increase or decrease Safari’s competence? Or does the monopoly policy lead Safari to the leader’s position in iOS? On iOS, which browser is liked most by the users, and what are the reasons for each browser to be popular?
+
+
 # Method
 
+We first choose Safari and four other popular browser apps, including Microsoft Edge, Google Chrome, Mozilla Firefox, and Opera, as our research objectives. We extract 500 “most helpful” records with ratings and reviews for each browser app (2,500 reviews in total) through the App Store Connect API with the R package “appler”. There is a tradeoff between “most helpful” records and “most recent” records. Although “most recent” records contain the latest feedback, the quality of reviews varies a lot, making it difficult to take a deeper analysis. The rating has a scale of 1-5. Based on the record, we calculate the mean rating of each browser to know which browser is liked most by the users. 
+
+To investigate what aspects of browsers are valued by users and have an overall comparison, we apply the topic modeling technique to all reviews after processing each piece of review, letting us know which topics are discussed most by the users. Considering that some reviews use words in a positive tone while others in the other direction, we divide the reviews into positive and negative categories based on the rating scores: rating >= 3 is considered a positive and otherwise is considered a negative review. We employ topic modeling for each category to gain deeper insights into user sentiments towards these browsers. If one browser has a higher proportion than others in a topic among positive reviews, it is considered to perform better in this aspect. If one browser has a higher percentage than others in a topic among negative reviews, it is considered to perform worse in this aspect. 
+
 # Result
+
+The summary statistics shown in Table 1 report the mean rating score and the number of positive and negative reviews for each browser. Opera has the highest mean rating score, 4 out of 5, among all browser apps, followed by Edge (3.75) and Firefox (3.07), also shown in Figure 1. Safari is ranked in fourth place with a mean rating score of approximately 2.85, closely followed by Chrome (2.78). Regarding the breakoff of reviews based on sentiment, we treat three as a cutoff point for rating scores for positive and negative reviews. While Opera has the highest number of positive reviews and the lowest number of negative reviews, Safari has the lowest and highest number of positive and negative reviews, respectively.
 
 ```{r}
 kable(ratings, col.names = c("Browser", "Rating", "Number of Positive Reviews", "Number of Negative Reviews"),
@@ -79,6 +90,8 @@ ggplot(ratings, aes(x = browser, y = rating, fill = browser)) +
   theme_bw()
 ```
 
+Topic modeling allows the comparison of proportions of identical topics across browsers. The ten most frequent topics for App Store reviews summarized by the topic modeling tool are shown in Figure 3. The ten topics may suggest aspects that users value the most when they approach browser apps. Considering the low information density in the reviews, the topics obtained are not all meaningful. We mainly discuss three selected topics that stand out the most to us among all ten in this study, including privacy, synchronization, and version update. Users commented on the topic of user privacy and security, which may include how the browsers would block some ads for them, as shown in the pink bar in Figure 3. Firefox has the highest proportion of privacy discussions (approximately 13% of all ten topics), followed by Opera, Edge, Safari, and Chrome. Also, users seem to be concerned about the ease of file synchronization for mobile and iPad, shown as the light green bar in Figure 3. The topic of sync is discussed most frequently in Edge, while the remaining browsers have similar proportions to one another. Besides privacy and sync, another user-concerned topic is version update, shown as the brown bar. Given the outstanding words for the topic, including update, issue, phone, load, and time, users may have paid great attention to the time efficiency of version updates. The update issue is most frequently discussed in Chrome, Safari, and Firefox, while such discussion for Opera and Edge is less frequent.
+
 ```{r fig.cap="Top 10 Topics for App Store Reviews by Browser"}
 ggplot(vizDataFrame1, 
        aes(x = browser, 
@@ -90,6 +103,8 @@ ggplot(vizDataFrame1,
   theme_bw()
 ```
 
+In addition, we perform topic modeling on positive reviews with rating scores greater than 3 out of 5. By examining the ten most frequent topics among positive reviews, we seek underlying reasons for positive reviews about the apps. Based on the computed most frequent topics among positive reviews in Figure 4, we select the topics of privacy, version update, and accessibility on multiple devices for browser app comparison. Regarding privacy, shown as the light green bar in Figure 4, Opera has the highest proportion of privacy discussion, closely followed by Firefox and Safari. The implication is that Opera may have the best security system that protects users’ data privacy, while Chrome was perceived as having the most unsafe security system. Regarding version update, shown as the blue bar, Chrome and Safari have the highest proportions of topic discussion, and Opera has the lowest, suggesting that users may have experienced the most efficient version update with Chrome and Safari and the worst with Opera. The last topic, accessibility on multiple devices, is shown as the black bar. Edge has the highest proportion of accessibility discussion, and Opera, Chrome, and Firefox have similar proportions. It can be inferred that users found access on multiple devices most achievable in Edge and most difficult in Safari.
+
 ```{r fig.cap="Top 10 Topics for Positive App Store Reviews by Browser"}
 ggplot(vizDataFrame2, 
        aes(x = browser, 
@@ -100,6 +115,8 @@ ggplot(vizDataFrame2,
   scale_fill_manual(values = paste0(alphabet(20), "FF"), name = "Topics") +
   theme_bw()
 ```
+
+Topic modeling results on negative reviews with rating scores lower than three are shown in Figure 5. The update issue, shown in the light green bar, is again mentioned among negative reviews. Edge has the highest proportion of negative reviews on the update topic, followed by Chrome. The proportions of the version update topic for Firefox, Safari, and Opera are similar. The implication is that Edge may have the biggest update issue, particularly on iPhone, which is inconsistent with the implication based on the results of positive reviews. The inconsistency may be due to complaints about update issues in the positive reviews. Another frequent topic among negative reviews is bookmark synchronization across multiple devices with the same user account. Opera has the highest proportion of bookmark sync discussion, followed by Edge, Firefox, Chrome, and Safari, implying that Opera provides the most problematic bookmark sync across devices. In the meantime, user experiences with Safari seem to be the most optimal in this case. 
 
 ```{r fig.cap="Top 10 Topics for Negative App Store Reviews by Browser"}
 ggplot(vizDataFrame3, 
@@ -113,5 +130,11 @@ ggplot(vizDataFrame3,
 ```
 
 # Discussion
+
+Each browser app seems to have its advantages and disadvantages based on App Store reviews by users. While we can infer that Opera is the most preferred browser based on mean rating scores and the number of positive and negative reviews, the topic modeling results suggest that Opera has the worst performance on the version update efficiency. In addition, despite having the lowest number of positive reviews and the highest number of negative reviews, Safari has relatively good performance on version updates and bookmark sync across multiple devices. 
+
+Responding to the research questions, this study concludes that Safari does not hold the absolute lead position even though Apple has a monopoly requirement. Each browser has its own advantages and disadvantages, and the performance of browsers on iOS should be evaluated dynamically based on various aspects, such as user privacy, synchronization, and version update efficiency. This study suggests that Apple may need to remove its monopoly strategy to achieve the goal of security, compatibility, and efficiency for user experiences for browsers.
+
+Our research also has several limitations. First of all, we divide the reviews into positive reviews and negative reviews based on the ratings. However, there might be some complaints in negative reviews and criticism in positive reviews. Therefore, we might confound some complaints and criticism in our analysis. A close reading of the reviews should be included to address this issue. Secondly, the “most helpful” reviews give reviews from all versions. Since the version of browsers updates rapidly, the function is changing as well; thus, our analysis may not be based on the latest browser versions.
 
 # Reference
